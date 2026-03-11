@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+
+body {
+  background-color: #000;
+  color: #fff;
+  font-family: 'Poppins', 'Roboto', sans-serif;
+}
+
+
+.auth-input {
+  @apply w-full p-3 bg-gray-800 rounded-md border border-gray-700
+         focus:outline-none focus:border-gray-500;
+}
+
+.auth-btn {
+  @apply w-full bg-green-500 hover:bg-green-400
+         text-black font-semibold p-3 rounded-full
+         cursor-pointer;
+}
+
+.spotify-input {
+  background: #2a2a2a;
+  color: white;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+}
+
+.spotify-input:focus {
+  ring: 2px solid #1db954;
+}
+
+.spotify-file {
+  color: #ccc;
+  font-size: 13px;
+}
+
+.spotify-btn {
+  margin-top: 8px;
+  background: #1db954;
+  color: black;
+  font-weight: 600;
+  padding: 10px;
+  border-radius: 9999px;
+  transition: transform 0.15s ease;
+}
+
+.spotify-btn:hover {
+  transform: scale(1.03);
+}
+
+.spotify-btn:disabled {
+  opacity: 0.6;
+}
+
+.spotify-input {
+  @apply w-full bg-[#2a2a2a] text-white
+         px-3 py-2 rounded-md text-sm
+         focus:outline-none focus:ring-2
+         focus:ring-[#1DB954];
+}
+
+.spotify-btn {
+  @apply mt-4 bg-[#1DB954] text-black
+         font-semibold py-2 rounded-full
+         hover:scale-[1.02] transition
+         disabled:opacity-60;
+}
+
