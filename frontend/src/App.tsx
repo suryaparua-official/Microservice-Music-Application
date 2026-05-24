@@ -9,7 +9,6 @@ import { Album } from "./pages/user/Album";
 import { PlayList } from "./pages/user/PlayList";
 import { Admin } from "./pages/admin/Admin";
 
-/* 🔑 missing imports — এগুলো যোগ করতে হবে */
 import Premium from "./pages/user/Premium";
 import InstallApp from "./pages/user/InstallApp";
 import Music from "./pages/user/Music";

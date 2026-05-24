@@ -1,59 +1,57 @@
 import type { NextFunction, Request, Response } from "express";
-import axios from "axios";
-import dotenv from "dotenv";
+import jwt, { type JwtPayload } from "jsonwebtoken";
+import multer from "multer";
 
-dotenv.config();
-
-interface IUser {
-  _id: string;
-  username: string;
-  email: string;
-  password: string;
+interface AdminJwtPayload extends JwtPayload {
+  id: string;
   role: string;
-  playlist: string[];
 }
 
-interface AuthRequest extends Request {
-  user?: IUser | null;
+export interface AuthRequest extends Request {
+  user?: {
+    _id: string;
+    role: string;
+  };
 }
 
-export const isAuth = async (
+export const isAuth = (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+): void => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ message: "Please login" });
+    return;
+  }
+
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    res.status(401).json({ message: "Please login" });
+    return;
+  }
+
+  const jwtSecret = process.env.JWT_SEC;
+  if (!jwtSecret) {
+    res.status(500).json({ message: "Server misconfigured" });
+    return;
+  }
+
   try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({ message: "Please login" });
-      return;
-    }
-
-    const { data } = await axios.get(
-      `${process.env.User_URL}/api/users/user/me`,
-      {
-        headers: {
-          Authorization: authHeader,
-        },
-      }
-    );
-
-    req.user = data;
-
+    const decoded = jwt.verify(token, jwtSecret) as AdminJwtPayload;
+    req.user = { _id: decoded.id, role: decoded.role };
     next();
-  } catch (error) {
-    res.status(401).json({
-      message: "Please login",
-    });
+  } catch {
+    res.status(401).json({ message: "Please login" });
   }
 };
 
-// multer setup
-import multer from "multer";
-
+// 50 MB limit matches nginx client_max_body_size
 const storage = multer.memoryStorage();
-
-const uploadFile = multer({ storage }).single("file");
+const uploadFile = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 },
+}).single("file");
 
 export default uploadFile;

@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { GrChapterNext, GrChapterPrevious } from "react-icons/gr";
+import { FaPlay, FaPause } from "react-icons/fa";
+import { IoPlaySkipBack, IoPlaySkipForward } from "react-icons/io5";
+import { HiVolumeUp, HiVolumeOff } from "react-icons/hi";
 import { useSongData } from "../../context/song/SongContext";
-import { FaPause, FaPlay, FaVolumeUp } from "react-icons/fa";
+
+const formatTime = (t: number) => {
+  if (!t || isNaN(t)) return "0:00";
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+};
 
 const Player = () => {
   const {
@@ -15,61 +23,29 @@ const Player = () => {
   } = useSongData();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const [volume, setVolume] = useState(1);
+  const [volume, setVolume]     = useState(1);
+  const [muted, setMuted]       = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  };
+  const progressPct = duration ? (progress / duration) * 100 : 0;
 
-  /* ===== audio events ===== */
+  /* ── Audio events ─────────────────────────────────────── */
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    const handleLoadedMetaData = () => {
-      setDuration(audio.duration || 0);
-    };
-
-    const handleTimeUpdate = () => {
-      setProgress(audio.currentTime || 0);
-    };
-
-    audio.addEventListener("loadedmetadata", handleLoadedMetaData);
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-
+    const onMeta  = () => setDuration(audio.duration || 0);
+    const onTime  = () => setProgress(audio.currentTime || 0);
+    const onEnded = () => { nextSong(); };
+    audio.addEventListener("loadedmetadata", onMeta);
+    audio.addEventListener("timeupdate", onTime);
+    audio.addEventListener("ended", onEnded);
     return () => {
-      audio.removeEventListener("loadedmetadata", handleLoadedMetaData);
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("loadedmetadata", onMeta);
+      audio.removeEventListener("timeupdate", onTime);
+      audio.removeEventListener("ended", onEnded);
     };
-  }, [song]);
-
-  const handlePlayPause = () => {
-    if (!audioRef.current) return;
-
-    if (isPlaying) audioRef.current.pause();
-    else audioRef.current.play();
-
-    setIsPlaying(!isPlaying);
-  };
-
-  const volumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseFloat(e.target.value);
-    setVolume(newVolume);
-    if (audioRef.current) audioRef.current.volume = newVolume;
-  };
-
-  const durationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!audioRef.current) return;
-
-    const newTime = (parseFloat(e.target.value) / 100) * duration;
-    audioRef.current.currentTime = newTime;
-    setProgress(newTime);
-  };
+  }, [song, nextSong]);
 
   useEffect(() => {
     fetchSingleSongs();
@@ -78,106 +54,135 @@ const Player = () => {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
     if (isPlaying && song?.audio) audio.play().catch(() => {});
     else audio.pause();
   }, [song, isPlaying]);
 
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) audioRef.current.pause();
+    else audioRef.current.play();
+    setIsPlaying(!isPlaying);
+  };
+
+  const onSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!audioRef.current || !duration) return;
+    const t = (parseFloat(e.target.value) / 100) * duration;
+    audioRef.current.currentTime = t;
+    setProgress(t);
+  };
+
+  const onVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = parseFloat(e.target.value);
+    setVolume(v);
+    if (audioRef.current) audioRef.current.volume = v;
+    setMuted(v === 0);
+  };
+
+  const toggleMute = () => {
+    if (!audioRef.current) return;
+    const next = !muted;
+    setMuted(next);
+    audioRef.current.volume = next ? 0 : volume;
+  };
+
+  if (!song) return null;
+
   return (
-    <div>
-      {song && (
-        <div
-          className="
-            fixed bottom-0 left-0 right-0 z-30
-            bg-black border-t border-[#2a2a2a] text-white
-            px-3 py-2
-            flex items-center gap-3
-            sm:static sm:px-4 sm:py-3
-          "
-        >
-          {/* ===== Song Info ===== */}
-          <div className="flex items-center gap-2 min-w-0 sm:min-w-[180px]">
-            <img
-              src={song.thumbnail || "/download.jpg"}
-              className="w-9 h-9 sm:w-12 sm:h-12 rounded object-cover"
-              alt=""
-            />
-            <div className="truncate">
-              <p className="text-xs sm:text-sm font-semibold truncate">
-                {song.title}
-              </p>
-              <p className="hidden sm:block text-xs text-gray-400 truncate">
-                {song.description?.slice(0, 30)}...
-              </p>
-            </div>
-          </div>
+    <div
+      className="fixed bottom-0 left-0 right-0 z-50
+                 bg-[#0a0a0a] border-t border-divider
+                 px-4 py-3 flex items-center gap-4"
+      style={{ height: "80px" }}
+    >
+      {song.audio && <audio ref={audioRef} src={song.audio} />}
 
-          {/* ===== Controls ===== */}
-          <div className="flex flex-col items-center gap-1 flex-1">
-            {song.audio && <audio ref={audioRef} src={song.audio} />}
+      {/* ── Song info ─────────────────────────────── */}
+      <div className="flex items-center gap-3 min-w-0 w-[200px] shrink-0">
+        <img
+          src={song.thumbnail || "/download.jpg"}
+          alt=""
+          className="w-11 h-11 rounded-md object-cover shrink-0"
+        />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-white truncate">{song.title}</p>
+          <p className="text-xs text-dim truncate">{song.description}</p>
+        </div>
+      </div>
 
-            <div className="flex items-center gap-3 sm:gap-4">
-              <button
-                className="text-gray-300 hover:text-white"
-                onClick={prevSong}
-              >
-                <GrChapterPrevious size={16} />
-              </button>
+      {/* ── Controls + progress ────────────────────── */}
+      <div className="flex-1 flex flex-col items-center gap-1.5 max-w-xl mx-auto">
+        <div className="flex items-center gap-5">
+          <button
+            onClick={prevSong}
+            className="text-dim hover:text-white transition-colors duration-150"
+            aria-label="Previous"
+          >
+            <IoPlaySkipBack size={18} />
+          </button>
 
-              <button
-                className="bg-white text-black rounded-full
-                           w-8 h-8 sm:w-10 sm:h-10
-                           flex items-center justify-center
-                           hover:scale-105 transition"
-                onClick={handlePlayPause}
-              >
-                {isPlaying ? (
-                  <FaPause size={12} />
-                ) : (
-                  <FaPlay size={12} />
-                )}
-              </button>
+          <button
+            onClick={togglePlay}
+            className="w-9 h-9 flex items-center justify-center rounded-full
+                       bg-white text-black hover:scale-105 transition-transform duration-150"
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? <FaPause size={13} /> : <FaPlay size={13} className="ml-0.5" />}
+          </button>
 
-              <button
-                className="text-gray-300 hover:text-white"
-                onClick={nextSong}
-              >
-                <GrChapterNext size={16} />
-              </button>
-            </div>
+          <button
+            onClick={nextSong}
+            className="text-dim hover:text-white transition-colors duration-150"
+            aria-label="Next"
+          >
+            <IoPlaySkipForward size={18} />
+          </button>
+        </div>
 
-            {/* ===== Progress ===== */}
-            <div className="flex items-center gap-1 w-full max-w-md text-[10px] sm:text-xs text-gray-400">
-              <span>{formatTime(progress)}</span>
-
-              <input
-                type="range"
-                min="0"
-                max="100"
-                className="flex-1 accent-blue-500 cursor-pointer"
-                value={(progress / duration) * 100 || 0}
-                onChange={durationChange}
-              />
-
-              <span>{formatTime(duration)}</span>
-            </div>
-          </div>
-
-          {/* ===== Volume (desktop only) ===== */}
-          <div className="hidden md:flex items-center gap-2 min-w-[120px]">
-            <FaVolumeUp className="text-gray-300" />
+        {/* Progress bar */}
+        <div className="flex items-center gap-2 w-full text-[10px] text-dim">
+          <span className="w-8 text-right tabular-nums">{formatTime(progress)}</span>
+          <div className="relative flex-1 h-4 flex items-center group">
             <input
               type="range"
               min="0"
-              max="1"
-              step="0.01"
-              value={volume}
-              onChange={volumeChange}
-              className="accent-blue-500 cursor-pointer"
+              max="100"
+              value={progressPct}
+              onChange={onSeek}
+              className="w-full"
+              style={{
+                background: `linear-gradient(to right, #1db954 ${progressPct}%, #3a3a3a ${progressPct}%)`,
+              }}
+              aria-label="Seek"
             />
           </div>
+          <span className="w-8 tabular-nums">{formatTime(duration)}</span>
         </div>
-      )}
+      </div>
+
+      {/* ── Volume ─────────────────────────────────── */}
+      <div className="hidden md:flex items-center gap-2 w-[120px] justify-end shrink-0">
+        <button
+          onClick={toggleMute}
+          className="text-dim hover:text-white transition-colors duration-150"
+          aria-label={muted ? "Unmute" : "Mute"}
+        >
+          {muted || volume === 0 ? <HiVolumeOff size={17} /> : <HiVolumeUp size={17} />}
+        </button>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={muted ? 0 : volume}
+          onChange={onVolume}
+          className="w-20"
+          style={{
+            background: `linear-gradient(to right, #ffffff ${(muted ? 0 : volume) * 100}%, #3a3a3a ${(muted ? 0 : volume) * 100}%)`,
+          }}
+          aria-label="Volume"
+        />
+      </div>
     </div>
   );
 };

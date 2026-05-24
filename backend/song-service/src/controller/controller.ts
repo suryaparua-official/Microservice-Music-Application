@@ -2,56 +2,41 @@ import { sql } from "../config/db.js";
 import { redisClient } from "../config/redis.js";
 import TryCatch from "../utils/TryCatch.js";
 
-export const getAllAlbum = TryCatch(async (req, res) => {
-  const CACHE_EXPIRY = 1800;
+const CACHE_TTL = 1800;
 
-  // 1. Cache check first
+export const getAllAlbum = TryCatch(async (_req, res) => {
   if (redisClient.isReady) {
-    const cachedAlbums = await redisClient.get("albums");
-
-    if (cachedAlbums) {
-      console.log("Cache hit");
-      return res.json(JSON.parse(cachedAlbums));
-    }
+    const cached = await redisClient.get("albums");
+    if (cached) return res.json(JSON.parse(cached));
   }
 
-  // 2. DB query
-  const albums = await sql`SELECT * FROM albums`;
+  const albums = await sql`SELECT * FROM albums ORDER BY created_at DESC`;
 
   if (albums.length === 0) {
-    return res.status(404).json({
-      message: "No albums found",
-    });
+    return res.status(404).json({ message: "No albums found" });
   }
 
-  // 3. Save to cache
   if (redisClient.isReady) {
-    await redisClient.setEx("albums", CACHE_EXPIRY, JSON.stringify(albums));
+    await redisClient.setEx("albums", CACHE_TTL, JSON.stringify(albums));
   }
 
   res.json(albums);
 });
 
-export const getAllSongs = TryCatch(async (req, res) => {
-  const CACHE_KEY = "songs";
-  const CACHE_EXPIRY = 1800;
-
+export const getAllSongs = TryCatch(async (_req, res) => {
   if (redisClient.isReady) {
-    const cache = await redisClient.get(CACHE_KEY);
-    if (cache) {
-      console.log("Cache hit");
-      return res.json(JSON.parse(cache));
-    }
+    const cached = await redisClient.get("songs");
+    if (cached) return res.json(JSON.parse(cached));
   }
 
-  const songs = await sql`SELECT * FROM songs`;
+  const songs = await sql`SELECT * FROM songs ORDER BY created_at DESC`;
 
   if (songs.length === 0) {
     return res.status(404).json({ message: "No songs found" });
   }
 
   if (redisClient.isReady) {
-    await redisClient.setEx(CACHE_KEY, CACHE_EXPIRY, JSON.stringify(songs));
+    await redisClient.setEx("songs", CACHE_TTL, JSON.stringify(songs));
   }
 
   res.json(songs);
@@ -59,59 +44,53 @@ export const getAllSongs = TryCatch(async (req, res) => {
 
 export const getAllSongsOfAlbum = TryCatch(async (req, res) => {
   const { id } = req.params;
-  const CACHE_KEY = `album:${id}:songs`;
-  const CACHE_EXPIRY = 1800;
+  if (!id) return res.status(400).json({ message: "Missing id" });
+
+  const cacheKey = `album:${id}:songs`;
 
   if (redisClient.isReady) {
-    const cache = await redisClient.get(CACHE_KEY);
-    if (cache) {
-      console.log("Cache hit");
-      return res.json(JSON.parse(cache));
-    }
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return res.json(JSON.parse(cached));
   }
 
   const album = await sql`SELECT * FROM albums WHERE id = ${id}`;
-
   if (album.length === 0) {
-    return res.status(404).json({ message: "No album with this id" });
+    return res.status(404).json({ message: "Album not found" });
   }
 
-  const songs = await sql`SELECT * FROM songs WHERE album_id = ${id}`;
+  const songs = await sql`SELECT * FROM songs WHERE album_id = ${id} ORDER BY created_at ASC`;
 
   if (songs.length === 0) {
     return res.status(404).json({ message: "No songs found for this album" });
   }
 
-  const response = { album: album[0], songs };
+  const payload = { album: album[0], songs };
 
   if (redisClient.isReady) {
-    await redisClient.setEx(CACHE_KEY, CACHE_EXPIRY, JSON.stringify(response));
+    await redisClient.setEx(cacheKey, CACHE_TTL, JSON.stringify(payload));
   }
 
-  res.json(response);
+  res.json(payload);
 });
 
 export const getSingleSong = TryCatch(async (req, res) => {
   const { id } = req.params;
-  const CACHE_KEY = `song:${id}`;
-  const CACHE_EXPIRY = 1800;
+  if (!id) return res.status(400).json({ message: "Missing id" });
+
+  const cacheKey = `song:${id}`;
 
   if (redisClient.isReady) {
-    const cache = await redisClient.get(CACHE_KEY);
-    if (cache) {
-      console.log("Cache hit");
-      return res.json(JSON.parse(cache));
-    }
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return res.json(JSON.parse(cached));
   }
 
   const song = await sql`SELECT * FROM songs WHERE id = ${id}`;
-
   if (song.length === 0) {
-    return res.status(404).json({ message: "No song found with this id" });
+    return res.status(404).json({ message: "Song not found" });
   }
 
   if (redisClient.isReady) {
-    await redisClient.setEx(CACHE_KEY, CACHE_EXPIRY, JSON.stringify(song[0]));
+    await redisClient.setEx(cacheKey, CACHE_TTL, JSON.stringify(song[0]));
   }
 
   res.json(song[0]);

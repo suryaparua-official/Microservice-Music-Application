@@ -1,4 +1,3 @@
-import React from "react";
 import { FaBookmark, FaPlay, FaPause } from "react-icons/fa";
 import { useUserData } from "../../context/user/UserContext";
 import { useSongData } from "../../context/song/SongContext";
@@ -10,13 +9,14 @@ interface SongCardProps {
   id: string;
 }
 
-const SongCard: React.FC<SongCardProps> = ({ image, name, id, desc }) => {
+const SongCard = ({ image, name, desc, id }: SongCardProps) => {
   const { addToPlaylist, isAuth } = useUserData();
-  const { setSelectedSong, setIsPlaying, isPlaying, selectedSong } =
-    useSongData();
+  const { setSelectedSong, setIsPlaying, isPlaying, selectedSong } = useSongData();
 
-  const handlePlayClick = () => {
-    if (selectedSong === id) {
+  const isActive = selectedSong === id;
+
+  const handlePlay = () => {
+    if (isActive) {
       setIsPlaying(!isPlaying);
     } else {
       setSelectedSong(id);
@@ -24,65 +24,61 @@ const SongCard: React.FC<SongCardProps> = ({ image, name, id, desc }) => {
     }
   };
 
-  const saveToPlayListHandler = () => {
-    addToPlaylist(id);
-  };
-
   return (
-    <div className="min-w-45 p-2 px-3 rounded cursor-pointer hover:bg-[#ffffff26] transition-colors duration-200">
-      <div className="relative group">
+    <div
+      className={`
+        group flex flex-col gap-3 p-3 rounded-xl cursor-pointer
+        transition-colors duration-200 min-w-[160px] w-[160px]
+        ${isActive ? "bg-elevated" : "bg-surface hover:bg-elevated"}
+      `}
+    >
+      <div className="relative w-full aspect-square">
         <img
           src={image || "/download.jpg"}
-          className="mr-1 rounded w-40"
-          alt=""
+          alt={name}
+          className="w-full h-full object-cover rounded-lg shadow-lg"
         />
-
-        {/* ===== ACTION BUTTONS ===== */}
-        <div className="flex gap-2">
-          {/* PLAY / PAUSE */}
-          <button
-            onClick={handlePlayClick}
-            className="
-              absolute bottom-2 right-14
-              bg-green-500 text-black p-3 rounded-full
-              transition-opacity duration-300
-
-              /* desktop: only on hover */
-              opacity-0 group-hover:opacity-100
-
-              /* mobile: always visible */
-              sm:opacity-0 sm:group-hover:opacity-100
-              opacity-100
-            "
-          >
-            {selectedSong === id && isPlaying ? <FaPause /> : <FaPlay />}
-          </button>
-
-          {/* ADD TO PLAYLIST */}
+        <div
+          className="absolute inset-0 rounded-lg bg-black/40
+                     flex items-end justify-between p-2
+                     opacity-0 group-hover:opacity-100
+                     transition-opacity duration-200"
+        >
           {isAuth && (
             <button
-              onClick={saveToPlayListHandler}
-              className="
-                absolute bottom-2 right-2
-                bg-green-500 text-black p-3 rounded-full
-                transition-opacity duration-300
-
-                /* desktop: only on hover */
-                opacity-0 group-hover:opacity-100
-
-                /* mobile: always visible */
-                sm:opacity-0 sm:group-hover:opacity-100
-                opacity-100
-              "
+              onClick={(e) => { e.stopPropagation(); addToPlaylist(id); }}
+              className="w-8 h-8 bg-black/50 rounded-full flex items-center justify-center
+                         text-white hover:bg-black/70 transition-colors"
+              aria-label="Save to playlist"
             >
-              <FaBookmark />
+              <FaBookmark size={11} />
             </button>
           )}
+
+          <button
+            onClick={(e) => { e.stopPropagation(); handlePlay(); }}
+            className={`
+              w-10 h-10 rounded-full flex items-center justify-center shadow-lg
+              translate-y-2 group-hover:translate-y-0 transition-transform duration-200 ml-auto
+              ${isActive ? "bg-accent hover:bg-accent-light" : "bg-accent"}
+            `}
+            aria-label={isActive && isPlaying ? "Pause" : "Play"}
+          >
+            {isActive && isPlaying ? (
+              <FaPause size={12} className="text-black" />
+            ) : (
+              <FaPlay size={12} className="text-black ml-0.5" />
+            )}
+          </button>
         </div>
       </div>
 
-      <p className="font-bold mt-2 mb-1">{name.slice(0, 15)}...</p>
-      <p className="text-slate-200 text-sm">{desc.slice(0, 20)}...</p>
+      <div className="flex flex-col gap-1 min-w-0">
+        <p className={`text-sm font-semibold truncate ${isActive ? "text-accent" : "text-white"}`}>
+          {name}
+        </p>
+        <p className="text-xs text-dim truncate">{desc}</p>
+      </div>
     </div>
   );
 };

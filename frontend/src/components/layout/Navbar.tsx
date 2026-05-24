@@ -1,129 +1,138 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUserData } from "../../context/user/UserContext";
+import { FiChevronLeft, FiChevronRight, FiMenu, FiLogOut, FiLogIn } from "react-icons/fi";
 
 interface NavbarProps {
   onMenuClick?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
+const FILTER_PILLS = [
+  { label: "All",      path: "/" },
+  { label: "Music",    path: "/music" },
+  { label: "Podcasts", path: "/podcasts" },
+];
+
+const Navbar = ({ onMenuClick }: NavbarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuth, loading, logoutUser } = useUserData();
-
-  const logoutUserHandler = () => logoutUser();
-
-  const pillClass = (path: string) =>
-    location.pathname === path
-      ? "bg-white text-black"
-      : "bg-[#2a2a2a] text-white hover:bg-[#3a3a3a]";
+  const { isAuth, loading, logoutUser, user } = useUserData();
 
   return (
-    <>
-      {/* ================= TOP BAR ================= */}
-      <div className="w-full flex items-center justify-between font-semibold gap-2">
-        <div className="flex items-center gap-2">
-          {/* Mobile menu button */}
+    <div className="flex flex-col gap-3">
+      {/* ── Top bar ───────────────────────────────── */}
+      <div className="flex items-center justify-between">
+        {/* Left: hamburger (mobile) + history nav */}
+        <div className="flex items-center gap-1">
           <button
-            onClick={() => onMenuClick?.()}
-            className="lg:hidden w-8 h-8 flex items-center justify-center
-                       bg-black rounded-full hover:bg-[#1a1a1a]"
+            onClick={onMenuClick}
+            className="lg:hidden w-9 h-9 flex items-center justify-center
+                       rounded-full bg-surface hover:bg-elevated
+                       transition-colors duration-150 text-dim hover:text-white mr-1"
+            aria-label="Open menu"
           >
-            ☰
+            <FiMenu size={16} />
           </button>
 
-          {/* App Name */}
-          <h1 className="text-white font-bold text-sm sm:text-base ml-1">
-            Music App
-          </h1>
-
-          <img
-            src="/left_arrow.png"
+          <button
             onClick={() => navigate(-1)}
-            alt=""
-            className="w-7 h-7 sm:w-8 sm:h-8 p-1 bg-black rounded-full cursor-pointer
-                       hover:bg-[#1a1a1a] transition-colors"
-          />
-          <img
-            src="/right_arrow.png"
+            className="w-9 h-9 flex items-center justify-center rounded-full
+                       bg-black/50 hover:bg-elevated text-dim hover:text-white
+                       transition-colors duration-150"
+            aria-label="Go back"
+          >
+            <FiChevronLeft size={18} />
+          </button>
+
+          <button
             onClick={() => navigate(+1)}
-            alt=""
-            className="w-7 h-7 sm:w-8 sm:h-8 p-1 bg-black rounded-full cursor-pointer
-                       hover:bg-[#1a1a1a] transition-colors"
-          />
+            className="w-9 h-9 flex items-center justify-center rounded-full
+                       bg-black/50 hover:bg-elevated text-dim hover:text-white
+                       transition-colors duration-150"
+            aria-label="Go forward"
+          >
+            <FiChevronRight size={18} />
+          </button>
         </div>
 
-        {/* Right actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <p
-            onClick={() => navigate("/premium")}
-            className="px-3 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm cursor-pointer bg-white text-black
-                       rounded-full hidden md:block hover:scale-[1.03] transition"
-          >
-            Explore Premium
-          </p>
+        {/* Right: auth actions */}
+        {!loading && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate("/premium")}
+              className="hidden md:block px-4 py-1.5 text-xs font-semibold
+                         text-white border border-divider rounded-full
+                         hover:border-white transition-colors duration-150"
+            >
+              Explore Premium
+            </button>
 
-          <p
-            onClick={() => navigate("/install")}
-            className="px-3 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm cursor-pointer bg-white text-black
-                       rounded-full hidden md:block hover:scale-[1.03] transition"
-          >
-            Install App
-          </p>
-
-          {!loading &&
-            (isAuth ? (
-              <p
-                onClick={logoutUserHandler}
-                className="px-3 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm cursor-pointer bg-white text-black
-                           rounded-full hover:scale-[1.03] transition"
-              >
-                Logout
-              </p>
+            {isAuth ? (
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5
+                                bg-surface rounded-full border border-divider">
+                  <div className="w-5 h-5 rounded-full bg-accent flex items-center justify-center text-black text-[10px] font-bold shrink-0">
+                    {user?.username?.[0]?.toUpperCase() ?? "U"}
+                  </div>
+                  <span className="text-xs font-medium text-white max-w-[100px] truncate">
+                    {user?.username}
+                  </span>
+                </div>
+                <button
+                  onClick={logoutUser}
+                  className="w-9 h-9 flex items-center justify-center rounded-full
+                             bg-surface hover:bg-elevated text-dim hover:text-white
+                             transition-colors duration-150 border border-divider"
+                  aria-label="Log out"
+                >
+                  <FiLogOut size={14} />
+                </button>
+              </div>
             ) : (
-              <p
+              <button
                 onClick={() => navigate("/login")}
-                className="px-3 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm cursor-pointer bg-white text-black
-                           rounded-full hover:scale-[1.03] transition"
+                className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold
+                           bg-white text-black rounded-full
+                           hover:scale-[1.02] transition-transform duration-150"
               >
-                Login
-              </p>
-            ))}
-        </div>
+                <FiLogIn size={13} />
+                Log in
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* ================= FILTER PILLS ================= */}
-      <div className="flex flex-wrap items-center gap-2 mt-4">
-        <p
-          onClick={() => navigate("/")}
-          className={`px-3 sm:px-4 py-1 text-xs sm:text-sm rounded-full cursor-pointer ${pillClass("/")}`}
-        >
-          All
-        </p>
+      {/* ── Filter pills ──────────────────────────── */}
+      <div className="flex items-center gap-2">
+        {FILTER_PILLS.map(({ label, path }) => {
+          const active = location.pathname === path;
+          return (
+            <button
+              key={path}
+              onClick={() => navigate(path)}
+              className={`
+                px-3.5 py-1.5 text-xs font-semibold rounded-full
+                transition-colors duration-150
+                ${active
+                  ? "bg-white text-black"
+                  : "bg-elevated text-white hover:bg-subtle"}
+              `}
+            >
+              {label}
+            </button>
+          );
+        })}
 
-        <p
-          onClick={() => navigate("/music")}
-          className={`px-3 sm:px-4 py-1 text-xs sm:text-sm rounded-full cursor-pointer ${pillClass("/music")}`}
-        >
-          Music
-        </p>
-
-        <p
-          onClick={() => navigate("/podcasts")}
-          className={`px-3 sm:px-4 py-1 text-xs sm:text-sm rounded-full cursor-pointer ${pillClass("/podcasts")}`}
-        >
-          Podcasts
-        </p>
-
-        {/* mobile shortcut */}
-        <p
+        {/* Playlist shortcut — mobile only */}
+        <button
           onClick={() => navigate("/playlist")}
-          className="px-3 sm:px-4 py-1 text-xs sm:text-sm bg-[#2a2a2a] text-white rounded-full cursor-pointer md:hidden
-                     hover:bg-[#3a3a3a] transition"
+          className="md:hidden px-3.5 py-1.5 text-xs font-semibold bg-elevated
+                     text-white rounded-full hover:bg-subtle transition-colors duration-150"
         >
-          PlayList
-        </p>
+          Playlist
+        </button>
       </div>
-    </>
+    </div>
   );
 };
 

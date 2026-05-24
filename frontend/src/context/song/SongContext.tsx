@@ -10,7 +10,7 @@ import axios from "axios";
 
 const server = import.meta.env.VITE_API_BASE_URL;
 
-/* ======== Types ======== */
+/* ── Types ───────────────────────────────────────────────────────────────── */
 
 export interface Song {
   id: string;
@@ -18,7 +18,7 @@ export interface Song {
   description: string;
   thumbnail: string;
   audio: string;
-  album: string;
+  album_id: string;
 }
 
 export interface Album {
@@ -43,23 +43,19 @@ interface SongContextType {
   albumSong: Song[];
   albumData: Album | null;
   fetchAlbumsongs: (id: string) => Promise<void>;
-
   fetchSongs: () => Promise<void>;
   fetchAlbums: () => Promise<void>;
   searchQuery: string;
-setSearchQuery: (v: string) => void;
-
+  setSearchQuery: (v: string) => void;
 }
 
-/* ======================= Context ======================= */
+/* ── Context ─────────────────────────────────────────────────────────────── */
 
 const SongContext = createContext<SongContextType | undefined>(undefined);
 
 interface SongProviderProps {
   children: ReactNode;
 }
-
-/* ======== Provider ======== */
 
 export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
   const [songs, setSongs] = useState<Song[]>([]);
@@ -69,95 +65,87 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
   const [index, setIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
-const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [albumSong, setAlbumSong] = useState<Song[]>([]);
+  const [albumData, setAlbumData] = useState<Album | null>(null);
 
-  /* ---------- Fetch all songs ---------- */
+  /* ── Fetchers ─────────────────────────────────────────────────────────── */
+
   const fetchSongs = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await axios.get<Song[]>(`${server}/api/songs/song/all`);
-
       setSongs(data);
-
       if (data.length > 0) {
         setIndex(0);
         setSelectedSong(data[0].id);
       }
-    } catch (error) {
-      console.error("Failed to fetch songs:", error);
+    } catch {
+      // API returns 404 when no songs exist — treat as empty list
+      setSongs([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  /* ---------- Fetch single song ---------- */
+  const fetchAlbums = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await axios.get<Album[]>(`${server}/api/songs/album/all`);
+      setAlbums(data);
+    } catch {
+      setAlbums([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const fetchSingleSongs = useCallback(async () => {
     if (!selectedSong) return;
-
     try {
       const { data } = await axios.get<Song>(
         `${server}/api/songs/song/${selectedSong}`
       );
       setSong(data);
-    } catch (error) {
-      console.error("Failed to fetch single song:", error);
+    } catch {
+      // Non-fatal — player will show previous song or nothing
     }
   }, [selectedSong]);
 
-  /* ---------- Fetch albums ---------- */
-  const fetchAlbums = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await axios.get<Album[]>(
-        `${server}/api/songs/album/all`
-      );
-      setAlbums(data);
-    } catch (error) {
-      console.error("Failed to fetch albums:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /* ---------- Next song ---------- */
-  const nextSong = useCallback(() => {
-    if (songs.length === 0) return;
-
-    const nextIndex = index === songs.length - 1 ? 0 : index + 1;
-    setIndex(nextIndex);
-    setSelectedSong(songs[nextIndex].id);
-  }, [index, songs]);
-
-  /* ---------- Previous song ---------- */
-  const prevSong = useCallback(() => {
-    if (songs.length === 0) return;
-
-    const prevIndex = index === 0 ? songs.length - 1 : index - 1;
-    setIndex(prevIndex);
-    setSelectedSong(songs[prevIndex].id);
-  }, [index, songs]);
-
-  const [albumSong, setAlbumSong] = useState<Song[]>([]);
-  const [albumData, setAlbumData] = useState<Album | null>(null);
-
-  //---------- Fetch songs by album ---------- //
   const fetchAlbumsongs = useCallback(async (id: string) => {
     setLoading(true);
     try {
       const { data } = await axios.get<{ songs: Song[]; album: Album }>(
         `${server}/api/songs/album/${id}`
       );
-
       setAlbumData(data.album);
       setAlbumSong(data.songs);
-    } catch (error) {
-      console.log(error);
+    } catch {
+      setAlbumData(null);
+      setAlbumSong([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  /* ---------- Initial fetch ---------- */
+  /* ── Navigation ───────────────────────────────────────────────────────── */
+
+  const nextSong = useCallback(() => {
+    if (songs.length === 0) return;
+    const next = index === songs.length - 1 ? 0 : index + 1;
+    setIndex(next);
+    setSelectedSong(songs[next].id);
+  }, [index, songs]);
+
+  const prevSong = useCallback(() => {
+    if (songs.length === 0) return;
+    const prev = index === 0 ? songs.length - 1 : index - 1;
+    setIndex(prev);
+    setSelectedSong(songs[prev].id);
+  }, [index, songs]);
+
+  /* ── Initial fetch ────────────────────────────────────────────────────── */
+
   useEffect(() => {
     fetchSongs();
     fetchAlbums();
@@ -182,8 +170,8 @@ const [searchQuery, setSearchQuery] = useState("");
         albumSong,
         fetchSongs,
         fetchAlbums,
-         searchQuery,
-    setSearchQuery,
+        searchQuery,
+        setSearchQuery,
       }}
     >
       {children}
@@ -191,7 +179,7 @@ const [searchQuery, setSearchQuery] = useState("");
   );
 };
 
-/* ======== Hook ======== */
+/* ── Hook ────────────────────────────────────────────────────────────────── */
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useSongData = (): SongContextType => {

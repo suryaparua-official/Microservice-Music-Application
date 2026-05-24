@@ -1,71 +1,127 @@
 @import "tailwindcss";
 
+@theme {
+  --color-surface: #111111;
+  --color-elevated: #1a1a1a;
+  --color-subtle: #282828;
+  --color-accent: #1db954;
+  --color-accent-light: #1ed760;
+  --color-divider: #2a2a2a;
+  --color-muted: #71717a;
+  --color-dim: #a1a1aa;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
 
 body {
-  background-color: #000;
-  color: #fff;
-  font-family: 'Poppins', 'Roboto', sans-serif;
+  background-color: #0a0a0a;
+  color: #ffffff;
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
 
-.auth-input {
-  @apply w-full p-3 bg-gray-800 rounded-md border border-gray-700
-         focus:outline-none focus:border-gray-500;
+/* ── Focus ───────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid #1db954;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
-.auth-btn {
-  @apply w-full bg-green-500 hover:bg-green-400
-         text-black font-semibold p-3 rounded-full
-         cursor-pointer;
+/* ── Selection ───────────────────────────────────────────── */
+::selection {
+  background: rgba(29, 185, 84, 0.25);
+  color: #ffffff;
 }
 
+/* ── Range inputs ────────────────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: #3a3a3a;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  margin-top: -4px;
+  opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+}
+input[type="range"]:hover::-webkit-slider-thumb { opacity: 1; }
+input[type="range"]:active::-webkit-slider-thumb { opacity: 1; transform: scale(1.25); }
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: #3a3a3a;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+}
+
+/* ── Now-playing bars ────────────────────────────────────── */
+@keyframes bar1 {
+  0%, 100% { height: 4px;  }
+  50%       { height: 14px; }
+}
+@keyframes bar2 {
+  0%, 100% { height: 10px; }
+  50%       { height: 4px;  }
+}
+@keyframes bar3 {
+  0%, 100% { height: 7px;  }
+  50%       { height: 14px; }
+}
+.playing-bar-1 { animation: bar1 0.9s ease-in-out infinite; }
+.playing-bar-2 { animation: bar2 0.9s ease-in-out infinite 0.15s; }
+.playing-bar-3 { animation: bar3 0.9s ease-in-out infinite 0.3s; }
+
+/* ── Skeleton shimmer ────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #1a1a1a 25%, #262626 50%, #1a1a1a 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* ── Kept for Admin page forms ───────────────────────────── */
 .spotify-input {
-  background: #2a2a2a;
-  color: white;
-  padding: 10px 12px;
-  border-radius: 6px;
-  font-size: 14px;
-  outline: none;
+  @apply w-full bg-subtle text-white px-3 py-2 rounded-lg text-sm
+         border border-divider
+         focus:outline-none focus:ring-2 focus:ring-accent;
 }
-
-.spotify-input:focus {
-  ring: 2px solid #1db954;
-}
-
-.spotify-file {
-  color: #ccc;
-  font-size: 13px;
-}
-
 .spotify-btn {
-  margin-top: 8px;
-  background: #1db954;
-  color: black;
-  font-weight: 600;
-  padding: 10px;
-  border-radius: 9999px;
-  transition: transform 0.15s ease;
+  @apply mt-4 bg-accent text-black font-semibold py-2.5 rounded-full
+         hover:bg-accent-light transition-all duration-200
+         disabled:opacity-50 disabled:cursor-not-allowed;
 }
-
-.spotify-btn:hover {
-  transform: scale(1.03);
-}
-
-.spotify-btn:disabled {
-  opacity: 0.6;
-}
-
-.spotify-input {
-  @apply w-full bg-[#2a2a2a] text-white
-         px-3 py-2 rounded-md text-sm
-         focus:outline-none focus:ring-2
-         focus:ring-[#1DB954];
-}
-
-.spotify-btn {
-  @apply mt-4 bg-[#1DB954] text-black
-         font-semibold py-2 rounded-full
-         hover:scale-[1.02] transition
-         disabled:opacity-60;
-}
-

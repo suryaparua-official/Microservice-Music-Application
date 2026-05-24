@@ -14,7 +14,6 @@
   "author": "Surya Parua",
   "license": "ISC",
   "dependencies": {
-    "@neondatabase/serverless": "^1.0.2",
     "@types/cors": "^2.8.19",
     "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.6",
@@ -22,6 +21,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "postgres": "^3.4.9",
     "redis": "^5.10.0"
   },
   "devDependencies": {

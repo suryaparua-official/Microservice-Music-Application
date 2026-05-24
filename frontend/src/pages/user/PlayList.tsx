@@ -1,10 +1,12 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "../../components/layout/Layout";
-import { useSongData } from "../../context/song/SongContext";
+import SongRow from "../../components/ui/SongRow";
+import EmptyState from "../../components/ui/EmptyState";
+import { RowSkeleton } from "../../components/ui/Skeleton";
+import { useSongData, type Song } from "../../context/song/SongContext";
 import { useUserData } from "../../context/user/UserContext";
-import { FaBookmark, FaPlay, FaPause } from "react-icons/fa";
-import Loading from "../../components/ui/Loading";
-import type { Song } from "../../context/song/SongContext";
+import { FaMusic } from "react-icons/fa";
 
 export const PlayList = () => {
   const {
@@ -16,138 +18,93 @@ export const PlayList = () => {
     loading,
   } = useSongData();
 
-  const { user, addToPlaylist } = useUserData();
+  const { user, isAuth, addToPlaylist } = useUserData();
+  const navigate = useNavigate();
 
   const myPlayList: Song[] = useMemo(() => {
     if (!songs || !user?.playlist) return [];
-    return songs.filter((song) =>
-      user.playlist.includes(String(song.id))
-    );
+    return songs.filter((song) => user.playlist.includes(String(song.id)));
   }, [songs, user]);
 
-  const handlePlayClick = (id: string) => {
-    if (selectedSong === id) {
-      setIsPlaying(!isPlaying);
-    } else {
-      setSelectedSong(id);
-      setIsPlaying(true);
-    }
+  const handlePlay = (id: string) => {
+    if (selectedSong === id) setIsPlaying(!isPlaying);
+    else { setSelectedSong(id); setIsPlaying(true); }
   };
 
   return (
     <Layout>
-      {loading && <Loading />}
+      {loading && (
+        <div className="mt-4 px-4">
+          {Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)}
+        </div>
+      )}
 
       {!loading && (
         <>
-          {/* ================= Header ================= */}
-          <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start md:items-end mt-6 px-4 sm:px-6">
-            <img
-              src="/download.jpg"
-              alt=""
-              className="w-32 h-32 sm:w-52 sm:h-52 object-cover rounded-md shadow-lg"
-            />
-
-            <div className="flex flex-col gap-2 sm:gap-3">
-              <p className="uppercase text-[10px] sm:text-xs tracking-widest text-gray-300">
+          {/* Header */}
+          <div
+            className="flex flex-col sm:flex-row gap-5 sm:gap-8
+                        items-center sm:items-end
+                        p-6 sm:p-8 rounded-xl
+                        bg-gradient-to-b from-elevated/60 to-transparent"
+          >
+            <div className="w-40 h-40 sm:w-52 sm:h-52 rounded-lg shadow-2xl shrink-0
+                            bg-elevated flex items-center justify-center">
+              <FaMusic size={52} className="text-dim" />
+            </div>
+            <div className="flex flex-col gap-2 text-center sm:text-left">
+              <p className="text-[10px] uppercase tracking-widest text-dim font-semibold">
                 Playlist
               </p>
-
-              <h1 className="text-2xl sm:text-4xl md:text-6xl font-extrabold text-white">
-                {user?.username || "My Playlist"}
+              <h1 className="text-3xl sm:text-5xl font-extrabold text-white leading-tight">
+                {user?.username ?? "My Playlist"}
               </h1>
-
-              <p className="text-xs sm:text-sm text-gray-300 max-w-xl">
-                Your favourite songs
-              </p>
-
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-300 mt-1 sm:mt-2">
-                <img src="/logo.png" className="w-5 h-5 sm:w-6 sm:h-6" alt="" />
-                <span className="font-semibold">Music App</span>
+              <p className="text-sm text-dim">Your favourite songs</p>
+              <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-dim mt-1">
+                <img src="/logo.png" className="w-4 h-4" alt="" />
+                <span className="font-semibold text-white">Music App</span>
                 <span>•</span>
                 <span>{myPlayList.length} songs</span>
               </div>
             </div>
           </div>
 
-          {/* ================= Table Header ================= */}
-          <div className="mt-6 sm:mt-10 px-4 sm:px-6">
-            <div
-              className="grid grid-cols-[40px_1fr_90px]
-                         sm:grid-cols-[50px_2fr_2fr_120px]
-                         text-[10px] sm:text-xs uppercase tracking-wider
-                         text-gray-400 border-b border-[#2a2a2a] pb-2 sm:pb-3"
-            >
-              <p>#</p>
-              <p>Title</p>
-              <p className="hidden sm:block">Description</p>
-              <p className="text-center">Actions</p>
-            </div>
-          </div>
-
-          {/* ================= Songs List ================= */}
-          <div className="px-4 sm:px-6">
-            {myPlayList.map((song, index) => (
-              <div
-                key={song.id}
-                className="grid grid-cols-[40px_1fr_90px]
-                           sm:grid-cols-[50px_2fr_2fr_120px]
-                           items-center py-2 sm:py-3
-                           text-gray-300 text-xs sm:text-sm
-                           hover:bg-[#1a1a1a]
-                           rounded-md transition"
-              >
-                {/* index */}
-                <p className="text-gray-400">{index + 1}</p>
-
-                {/* title */}
-                <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                  <img
-                    src={song.thumbnail || "/download.jpeg"}
-                    alt=""
-                    className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded"
-                  />
-                  <span className="text-white font-medium truncate">
-                    {song.title}
-                  </span>
-                </div>
-
-                {/* description */}
-                <p className="hidden sm:block text-gray-400 truncate">
-                  {song.description.slice(0, 40)}...
-                </p>
-
-                {/* actions */}
-                <div className="flex justify-center items-center gap-3 sm:gap-4">
-                  <button
-                    onClick={() => addToPlaylist(song.id)}
-                    className="text-gray-400 hover:text-white transition"
-                  >
-                    <FaBookmark size={14} />
-                  </button>
-
-                  <button
-                    onClick={() => handlePlayClick(song.id)}
-                    className="w-7 h-7 sm:w-8 sm:h-8
-                               bg-white text-black rounded-full
-                               flex items-center justify-center"
-                  >
-                    {selectedSong === song.id && isPlaying ? (
-                      <FaPause size={11} />
-                    ) : (
-                      <FaPlay size={11} />
-                    )}
-                  </button>
-                </div>
+          {myPlayList.length === 0 ? (
+            <EmptyState
+              icon={<FaMusic size={24} />}
+              title="Your playlist is empty"
+              description="Find songs you love and save them here to build your personal collection."
+              action={{ label: "Browse music", onClick: () => navigate("/") }}
+            />
+          ) : (
+            <>
+              {/* Table header */}
+              <div className="grid grid-cols-[40px_1fr_auto] sm:grid-cols-[40px_1fr_1fr_auto]
+                              gap-3 sm:gap-4 px-3 sm:px-4 pb-2 mt-4
+                              text-[10px] uppercase tracking-wider text-dim font-semibold
+                              border-b border-divider">
+                <span>#</span>
+                <span>Title</span>
+                <span className="hidden sm:block">Description</span>
+                <span className="text-right">Actions</span>
               </div>
-            ))}
 
-            {myPlayList.length === 0 && (
-              <p className="text-center text-gray-400 mt-8 sm:mt-10 text-sm">
-                Your playlist is empty 🎵
-              </p>
-            )}
-          </div>
+              <div className="mt-1">
+                {myPlayList.map((song, index) => (
+                  <SongRow
+                    key={song.id}
+                    index={index}
+                    song={song}
+                    isActive={selectedSong === song.id}
+                    isPlaying={isPlaying}
+                    isAuth={isAuth}
+                    onPlay={() => handlePlay(song.id)}
+                    onSave={() => addToPlaylist(song.id)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </>
       )}
     </Layout>

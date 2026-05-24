@@ -1,27 +1,31 @@
 import Layout from "../../components/layout/Layout";
 import SongCard from "../../components/ui/SongCard";
-import Loading from "../../components/ui/Loading";
+import { CardSkeleton } from "../../components/ui/Skeleton";
 import { useSongData } from "../../context/song/SongContext";
 
 const Music = () => {
   const { songs, loading } = useSongData();
 
-  if (loading) return <Loading />;
-
   return (
     <Layout>
-      <h1 className="my-5 font-bold text-2xl">All Music</h1>
+      <h2 className="text-xl font-bold text-white tracking-tight mb-4 mt-1">All Music</h2>
 
       <div className="flex flex-wrap gap-4">
-        {songs.map((e, i) => (
-          <SongCard
-            key={i}
-            image={e.thumbnail}
-            name={e.title}
-            desc={e.description}
-            id={e.id}
-          />
-        ))}
+        {loading
+          ? Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="w-[160px]">
+                <CardSkeleton />
+              </div>
+            ))
+          : songs.map((e) => (
+              <SongCard
+                key={e.id}
+                image={e.thumbnail}
+                name={e.title}
+                desc={e.description}
+                id={e.id}
+              />
+            ))}
       </div>
     </Layout>
   );
